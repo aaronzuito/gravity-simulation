@@ -18,6 +18,7 @@ const char *fragmentShaderSource = "#version 460 core\n"
 "FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
 "}\0";
 
+const double G = 6.6743e-11f; // Newton's gravitational constant
 GLFWwindow* StartGLFW();
 
 
@@ -54,9 +55,10 @@ class entity{
 			return vertices;
 		}	
 
-		entity(glm::vec3 initPosition, float mass, float ratio, glm::vec4 color){
+		entity(glm::vec3 initPosition, glm::vec3 initVelocity, float mass, float ratio, glm::vec4 color){
 
 			position = initPosition;
+			velocity = initVelocity;
 			this -> mass = mass;
 			this -> ratio = ratio;
 			this -> density = mass / ((4.0f/3.0f)*3.1415926535f*std::pow(ratio, 3.0f));
@@ -112,36 +114,42 @@ int main(){
 	}
 	
 	glfwSetFramebufferSizeCallback(window, resizeWindowView);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	initShader();
-	entity earth(glm::vec3(-0.5f,0.27f,0.0f), 10, 0.35f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	entity moon(glm::vec3(0.5f,0.0f,0.0f), 1, 0.25f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	moon.velocity.x = 0.0001f;
-	earth.velocity.x = -0.005f;
 	
-
+		
+	std::vector<entity> objects = {
+	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.97e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.02f, 0.0f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	};
 
 	while (!glfwWindowShouldClose(window)){						
 	
 	manageInput(window);
-
-	glClear(GL_COLOR_BUFFER_BIT);
-	earth.render(shaderProgram);
-	moon.render(shaderProgram);
-
+	glClear(GL_COLOR_BUFFER_BIT);	
 	
-	moon.position += moon.velocity;
-	moon.velocity.y -= 0.0005f;
-	earth.position += earth.velocity;
-	earth.velocity.y -= 0.0005f;
-	
-	
-	
-	checkWallColisions(earth);
-	checkWallColisions(moon);
-	checkColisions(earth, moon);	
-	
+	for(auto &object : objects){
+		float acceleration;
+		glm::vec3 direction;
 		
+		for(auto &object2 : objects){
+			if(&object == &object2){continue;}
+			
+			float distance = glm::distance(object2.position, object.position);
+			distance *= 10e8;
+			direction = glm::normalize(object.position - object2.position);
+
+			float Gforce = -(G*object.mass*object2.mass) / (distance*distance);
+			acceleration = (Gforce / object.mass);
+			checkColisions(object, object2);
+
+		}
+	
+		object.velocity += acceleration*direction;
+		object.position += object.velocity;
+		object.render(shaderProgram);
+		
+	}
 	
 	//check and call events
 	glfwSwapBuffers(window);
@@ -321,3 +329,4 @@ void checkColisions(entity &object1, entity &object2){
 
 	}
 }
+
