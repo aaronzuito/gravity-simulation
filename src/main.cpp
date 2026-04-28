@@ -121,8 +121,8 @@ int main(){
 	
 		
 	std::vector<entity> objects = {
-	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 120.0f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
-	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 74.0f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.94e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.02f, 0.0f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
 	};
 
 	while (!glfwWindowShouldClose(window)){						
