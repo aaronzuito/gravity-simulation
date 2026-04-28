@@ -4,6 +4,8 @@
 #include <cmath>
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 const char *vertexShaderSource = "#version 460 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -51,7 +53,7 @@ class entity{
 				vertices.push_back(0.0f); //z
 
 			}	
-			vertexCount = vertices.size() / 3;
+			vertexCount = vertices.size() / 3.0f;
 			return vertices;
 		}	
 
@@ -313,8 +315,8 @@ void checkColisions(entity &object1, entity &object2){
 		float v2n = glm::dot(normal, v2);
 		float v2t = glm::dot(tangent, v2);
 
-		float v1nF = (v1n*(object1.mass - object2.mass) + 2*object2.mass*v2n) / (object1.mass + object2.mass);
-		float v2nF =  (v2n*(object2.mass - object1.mass) + 2*object1.mass*v1n) / (object1.mass + object2.mass);
+		float v1nF = (v1n*(object1.mass - object2.mass) + 2.0f*object2.mass*v2n) / (object1.mass + object2.mass);
+		float v2nF =  (v2n*(object2.mass - object1.mass) + 2.0f*object1.mass*v1n) / (object1.mass + object2.mass);
 
 		object1.velocity = (v1nF*normal) + (v1t*tangent);
 		object2.velocity = (v2nF*normal) + (v2t*tangent);
