@@ -34,7 +34,7 @@ class entity{
 	
 		glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-		float mass;
+		double mass;
 		float ratio;
 		float density;
 		glm::vec4 color;
@@ -55,7 +55,7 @@ class entity{
 			return vertices;
 		}	
 
-		entity(glm::vec3 initPosition, glm::vec3 initVelocity, float mass, float ratio, glm::vec4 color){
+		entity(glm::vec3 initPosition, glm::vec3 initVelocity, double mass, float ratio, glm::vec4 color){
 
 			position = initPosition;
 			velocity = initVelocity;
@@ -119,8 +119,8 @@ int main(){
 	
 		
 	std::vector<entity> objects = {
-	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.97e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
-	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.02f, 0.0f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 120.0f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 74.0f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
 	};
 
 	while (!glfwWindowShouldClose(window)){						
@@ -135,7 +135,7 @@ int main(){
 		for(auto &object2 : objects){
 			if(&object == &object2){continue;}
 			
-			float distance = glm::distance(object2.position, object.position);
+			double distance = glm::distance(object2.position, object.position);
 			distance *= 10e8;
 			direction = glm::normalize(object.position - object2.position);
 
