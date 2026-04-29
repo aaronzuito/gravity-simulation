@@ -9,9 +9,11 @@
 
 const char *vertexShaderSource = "#version 460 core\n"
 "layout (location = 0) in vec3 aPos;\n"
-"uniform vec3 offset;\n"
+"uniform mat4 model;\n"
+"uniform mat4 view;\n"
+"uniform mat4 projection;\n"
 "void main(){\n"
-"gl_Position = vec4(aPos.x + offset.x, aPos.y + offset.y, aPos.z + offset.z, 1.0);\n"
+"gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
 "}\0";
 
 const char *fragmentShaderSource = "#version 460 core\n"
@@ -40,6 +42,10 @@ class entity{
 		float ratio;
 		float density;
 		glm::vec4 color;
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 projection = glm::mat4(1.0f);
+
 		
 		std::vector<float> createVertices(float ratio, long int res){
 			std::vector<float> vertices;
@@ -85,13 +91,22 @@ class entity{
 }
 
 	void render(unsigned int shaderID){
-		glUseProgram(shaderID);
-		
-		int offsetSend = glGetUniformLocation(shaderProgram, "offset");
-		glUniform3f(offsetSend, position.x, position.y, position.z);
+		glUseProgram(shaderID);	
+		// model matrix
+		int modelLoc = glGetUniformLocation(shaderID, "model");
+		glUniformMatrix4fv(modelLoc,1 , GL_FALSE, glm::value_ptr(model));
 
-		
-		
+		// view matrix	
+		int viewLoc = glGetUniformLocation(shaderID, "view");
+		glUniformMatrix4fv(viewLoc,1 , GL_FALSE, glm::value_ptr(view));
+
+		// projection matrix
+		int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+		glUniformMatrix4fv(projectionLoc,1 , GL_FALSE, glm::value_ptr(projection));
+
+ 
+	// outside render loop
+	
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, vertexCount);
 		glBindVertexArray(0);
@@ -104,7 +119,7 @@ class entity{
 void checkWallColisions(entity &object);
 void checkColisions(entity &object1, entity &object2);
 
-
+	
 int main(){
 
 	GLFWwindow* window = StartGLFW();
@@ -124,6 +139,9 @@ int main(){
 	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.94e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
 	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.02f, 0.0f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
 	};
+	
+	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);	
 
 	while (!glfwWindowShouldClose(window)){						
 	
@@ -149,10 +167,20 @@ int main(){
 	
 		object.velocity += acceleration*direction;
 		object.position += object.velocity;
-		object.render(shaderProgram);
 		
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, object.position);
+		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f,0.0f,0.0f));
+
+
+		object.model = model;
+		object.view = view;
+		object.projection = projection;
+
+		object.render(shaderProgram);
 	}
 	
+
 	//check and call events
 	glfwSwapBuffers(window);
 	glfwPollEvents();
