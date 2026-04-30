@@ -152,7 +152,12 @@ class entity{
 void checkWallColisions(entity &object);
 void checkColisions(entity &object1, entity &object2);
 
-	
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
 int main(){
 
 	GLFWwindow* window = StartGLFW();
@@ -166,22 +171,27 @@ int main(){
 	glfwSetFramebufferSizeCallback(window, resizeWindowView);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_DEPTH_TEST);
 	initShader();
 	
 		
 	std::vector<entity> objects = {
-	entity(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.94e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
-	entity(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f, 0.02f, 0.0f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	
+	entity(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.94e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+	entity(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.02f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),	
+
 	};
 	
-	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);	
+	//
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);
+		
+
 
 	while (!glfwWindowShouldClose(window)){						
 	
 	manageInput(window);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	for(auto &object : objects){
 		float acceleration;
 		glm::vec3 direction;
@@ -190,26 +200,26 @@ int main(){
 			if(&object == &object2){continue;}
 			
 			double distance = glm::distance(object2.position, object.position);
-			distance *= 10e8;
-			direction = glm::normalize(object.position - object2.position);
+			if (distance < 0.01f) distance = 0.01f;
+			
+			direction = glm::normalize(object2.position - object.position);
 
-			float Gforce = -(G*object.mass*object2.mass) / (distance*distance);
+		 	float Gforce = (G*object.mass*object2.mass) / (distance*distance);
 			acceleration = (Gforce / object.mass);
 			checkColisions(object, object2);
 
 		}
 	
-		object.velocity += acceleration*direction;
-		object.position += object.velocity;
+		object.velocity += (acceleration*direction)*deltaTime;
+		object.position += object.velocity * deltaTime;
 		
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, object.position);
-		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f,0.0f,0.0f));
-	
+		model = glm::translate(model, object.position);	
 
 
 		object.model = model;
-		object.view = view;
+		object.view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
 		object.projection = projection;
 
 		object.render(shaderProgram);
@@ -262,12 +272,30 @@ GLFWwindow* StartGLFW(){
 
 void manageInput(GLFWwindow* window){
 
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
-		
-		glfwSetWindowShouldClose(window, true);
-	} 
+	float currentFrame = glfwGetTime();
+	deltaTime = currentFrame - lastFrame;
+	lastFrame = currentFrame;
 
+	const float cameraSpeed = 2.5f * deltaTime;
+
+
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+	
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	    	cameraPos += cameraSpeed * cameraFront;
+
+    	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        	cameraPos -= cameraSpeed * cameraFront;
+
+    	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        	cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+    	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        	cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
+
+
 
 // Window resize managment
 
