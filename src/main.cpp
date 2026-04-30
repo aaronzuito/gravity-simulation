@@ -22,8 +22,10 @@ const char *fragmentShaderSource = "#version 460 core\n"
 "FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
 "}\0";
 
-const double G = 6.6743e-11f; // Newton's gravitational constant
+const double G = 6.6743e-11; // Newton's gravitational constant
 const float pi = 3.1415926535f; // PI
+const double scale = 1e9; // 1 OpenGL unit = 1,000,000,000 m
+const float timeMultiplier = 86400.0f; // 1s = 1 day
 GLFWwindow* StartGLFW();
 
 
@@ -133,7 +135,7 @@ class entity{
 		glUniformMatrix4fv(viewLoc,1 , GL_FALSE, glm::value_ptr(view));
 
 		// projection matrix
-		int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+		int projectionLoc = glGetUniformLocation(shaderID, "projection");
 		glUniformMatrix4fv(projectionLoc,1 , GL_FALSE, glm::value_ptr(projection));
 
  
@@ -154,6 +156,7 @@ void checkColisions(entity &object1, entity &object2);
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -177,13 +180,12 @@ int main(){
 		
 	std::vector<entity> objects = {
 	
-	entity(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.94e24f, 0.2f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
-	entity(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.02f), 7.34e22f, 0.1f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),	
+	entity(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.94e24f, 6.371e6, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), //earth
+	entity(glm::vec3(3.844e8, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.022e3f), 7.34e22f, 1.7375e6, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), //moon
 
 	};
 	
 	//
-
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 800.0f, 0.1f, 100.0f);
 		
 
@@ -193,7 +195,7 @@ int main(){
 	manageInput(window);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	for(auto &object : objects){
-		float acceleration;
+		glm::vec3 acceleration = glm::vec3(0.0f);
 		glm::vec3 direction;
 		
 		for(auto &object2 : objects){
@@ -204,22 +206,29 @@ int main(){
 			
 			direction = glm::normalize(object2.position - object.position);
 
-		 	float Gforce = (G*object.mass*object2.mass) / (distance*distance);
-			acceleration = (Gforce / object.mass);
-			checkColisions(object, object2);
+		 	float gForce = (G*object2.mass) / (distance*distance);
+			acceleration += direction * gForce;
+			// checkColisions(object, object2);
 
 		}
 	
-		object.velocity += (acceleration*direction)*deltaTime;
-		object.position += object.velocity * deltaTime;
+		object.velocity += acceleration * (deltaTime*timeMultiplier);
+		object.position += object.velocity * (deltaTime*timeMultiplier);
 		
+		// aplying scale
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, object.position);	
+		glm::vec3 renderPos = object.position / (float)scale;
+		model = glm::translate(model, renderPos);
+		
+		float visualMultiplier = 1.0f; // change this for reality to 1.0f
 
+		model = glm::scale(model, glm::vec3(visualMultiplier / (float)scale));
+		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f,0.0f,0.0f));
 
 		object.model = model;
+		
+		
 		object.view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-
 		object.projection = projection;
 
 		object.render(shaderProgram);
@@ -354,6 +363,7 @@ void initShader(){
 
 }
 
+
 // checking colisions 		
 void checkWallColisions(entity &object){
 	
@@ -416,8 +426,6 @@ void checkColisions(entity &object1, entity &object2){
 		if (overlap > 0){
 		object1.position -= normal*(overlap / 2.0f);
 		object2.position += normal*(overlap / 2.0f);
-
-
 		}
 
 	}
